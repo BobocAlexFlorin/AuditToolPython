@@ -1,0 +1,59 @@
+"""import ldap3
+import streamlit as st
+from typing import Tuple, Optional
+import os
+
+def authenticate_windows_ad(username: str, password: str) -> Tuple[bool, list]:
+    Authenticate user against Windows Active Directory and get their groups.
+    domain = os.environ.get('USERDOMAIN', '')
+    if not domain:
+        st.error("Could not detect Windows domain. Please contact your administrator.")
+        return False, []
+    server = ldap3.Server(domain)
+    try:
+        conn = ldap3.Connection(
+            server,
+            user=f"{domain}\\{username}",
+            password=password,
+            authentication=ldap3.NTLM
+        )
+        if conn.bind():
+            # Search for user groups
+            conn.search(
+                f"DC={domain.split('.')[0]},DC={domain.split('.')[1] if '.' in domain else domain}",
+                f"(&(objectClass=user)(sAMAccountName={username}))",
+                attributes=['memberOf']
+            )
+            groups = []
+            if conn.entries:
+                groups = [g.split(',')[0].split('=')[1] for g in conn.entries[0].memberOf]
+            return True, groups
+        return False, []
+    except Exception as e:
+        st.error(f"Authentication error: {str(e)}")
+        return False, []
+
+def check_user_role(groups: list) -> str:
+    Determine user role based on AD groups.
+    admin_groups = ['Audit_Admins', 'Domain Admins']
+    auditor_groups = ['Audit_Auditors']
+    
+    if any(group in admin_groups for group in groups):
+        return 'admin'
+    elif any(group in auditor_groups for group in groups):
+        return 'auditor'
+    return 'user'
+
+def get_user_auth() -> Tuple[bool, Optional[str], Optional[str]]:
+    Get user authentication status and role.
+    if 'authenticated' not in st.session_state:
+        st.session_state.authenticated = False
+        st.session_state.user_role = None
+        st.session_state.username = None
+    
+    return (
+        st.session_state.authenticated,
+        st.session_state.user_role,
+        st.session_state.username
+    )
+"""
